@@ -12,7 +12,7 @@ class ReportController extends Controller
      */
     public function index()
     {
-        $projects = Project::whereHas('blocks.pieces', function ($query) {
+        $projectsPending = Project::whereHas('blocks.pieces', function ($query) {
             $query->where('status', 'Pendiente');
         })
             ->with(['blocks' => function ($query) {
@@ -22,10 +22,34 @@ class ReportController extends Controller
             }])
             ->get();
 
+        $projectsStats = Project::with(['blocks.pieces'])->get()->map(function ($project) {
+            $pendingCount = 0;
+            $fabricatedCount = 0;
+
+            foreach ($project->blocks as $block) {
+                foreach ($block->pieces as $piece) {
+                    if ($piece->status === 'Pendiente') {
+                        $pendingCount++;
+                    } elseif ($piece->status === 'Fabricado') {
+                        $fabricatedCount++;
+                    }
+                }
+            }
+
+            return [
+                'id' => $project->id,
+                'name' => $project->name,
+                'pending_count' => $pendingCount,
+                'fabricated_count' => $fabricatedCount,
+            ];
+        });
+
         return inertia('Reports/Reports', [
-            'projects' => $projects
+            'projectsPending' => $projectsPending,
+            'projectsStats' => $projectsStats,
         ]);
     }
+
 
     /**
      * Show the form for creating a new resource.
