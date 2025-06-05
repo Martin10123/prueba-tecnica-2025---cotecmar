@@ -6,7 +6,6 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-// Recibir bloques como prop
 const props = defineProps({
     blocks: Array,
     projects: Array,
@@ -15,7 +14,7 @@ const props = defineProps({
 const toast = useToast();
 
 const form = useForm({
-    id: '',
+    block_id: '',
     name: '',
     project_id: '',
 });
@@ -24,7 +23,7 @@ const editMode = ref(false);
 const editingBlockId = ref(null);
 
 function startEdit(block) {
-    form.id = block.id;
+    form.block_id = block.block_id;
     form.name = block.name;
     form.project_id = block.project_id;
     editMode.value = true;
@@ -38,6 +37,12 @@ function cancelEdit() {
 }
 
 function submit() {
+
+    if (!form.block_id || !form.name || !form.project_id) {
+        toast.error('Por favor, complete todos los campos requeridos.');
+        return;
+    }
+
     if (editMode.value) {
         form.put(route('blocks.update', editingBlockId.value), {
             onSuccess: () => {
@@ -66,6 +71,7 @@ function deleteBlock(id) {
         form.delete(route('blocks.destroy', id), {
             onSuccess: () => {
                 toast.success('Bloque eliminado exitosamente');
+                form.reset();
             },
             onError: () => {
                 toast.error('Error al eliminar el bloque');
@@ -96,11 +102,11 @@ function deleteBlock(id) {
 
                         <form @submit.prevent="submit">
                             <div class="mt-4">
-                                <InputLabel for="id" value="ID" />
-                                <TextInput v-model="form.id" id="id" type="text" class="mt-1 block w-full"
+                                <InputLabel for="block_id" value="Block ID" />
+                                <TextInput v-model="form.block_id" id="block_id" type="text" class="mt-1 block w-full"
                                     :disabled="editMode" autocomplete="off" />
-                                <p v-if="form.errors.id" class="text-red-600 text-sm mt-1">
-                                    {{ form.errors.id }}
+                                <p v-if="form.errors.block_id" class="text-red-600 text-sm mt-1">
+                                    {{ form.errors.block_id }}
                                 </p>
                             </div>
 
@@ -115,7 +121,6 @@ function deleteBlock(id) {
 
                             <div class="mt-4">
                                 <InputLabel for="project_id" value="Proyecto" />
-
                                 <select v-model="form.project_id" id="project_id"
                                     class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                     <option value="" disabled>Seleccione un proyecto</option>
@@ -123,7 +128,6 @@ function deleteBlock(id) {
                                         {{ project.name }}
                                     </option>
                                 </select>
-
                                 <p v-if="form.errors.project_id" class="text-red-600 text-sm mt-1">
                                     {{ form.errors.project_id }}
                                 </p>
@@ -148,6 +152,7 @@ function deleteBlock(id) {
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
                                     <th scope="col" class="px-6 py-3">ID</th>
+                                    <th scope="col" class="px-6 py-3">Block ID</th>
                                     <th scope="col" class="px-6 py-3">Nombre</th>
                                     <th scope="col" class="px-6 py-3">Proyecto</th>
                                     <th scope="col" class="px-6 py-3">Acciones</th>
@@ -159,6 +164,7 @@ function deleteBlock(id) {
                                     <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
                                         {{ block.id }}
                                     </th>
+                                    <td class="px-6 py-4">{{ block.block_id }}</td>
                                     <td class="px-6 py-4">{{ block.name }}</td>
                                     <td class="px-6 py-4">{{ block.project?.name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 flex gap-2">
@@ -172,9 +178,8 @@ function deleteBlock(id) {
                                         </button>
                                     </td>
                                 </tr>
-
                                 <tr v-if="props.blocks.length === 0">
-                                    <td colspan="4" class="px-6 py-4 text-center">
+                                    <td colspan="5" class="px-6 py-4 text-center">
                                         No hay bloques
                                     </td>
                                 </tr>

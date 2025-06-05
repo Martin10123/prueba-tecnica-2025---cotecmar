@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -26,11 +26,14 @@ const editMode = ref(false);
 const editingPieceId = ref(null);
 
 function startEdit(piece) {
+    form.reset();
+
     form.code = piece.code;
     form.theoretical_weight = piece.theoretical_weight;
     form.real_weight = piece.real_weight ?? '';
     form.status = piece.status;
     form.block_id = piece.block_id;
+
     editMode.value = true;
     editingPieceId.value = piece.id;
 }
@@ -43,7 +46,6 @@ function cancelEdit() {
 
 function submit() {
     if (editMode.value) {
-
         form.put(route('pieces.update', editingPieceId.value), {
             onSuccess: () => {
                 cancelEdit();
@@ -78,6 +80,16 @@ function deletePiece(id) {
         });
     }
 }
+
+// Mostrar errores globales que vienen en form.errors.error (los de try-catch backend)
+watch(
+    () => form.errors.error,
+    (error) => {
+        if (error) {
+            toast.error(error);
+        }
+    }
+);
 </script>
 
 <template>
@@ -97,6 +109,7 @@ function deletePiece(id) {
                     </h3>
 
                     <form @submit.prevent="submit">
+
                         <div class="mb-4">
                             <InputLabel for="code" value="Código" />
                             <TextInput v-model="form.code" id="code" type="text" :readonly="editMode"
@@ -108,16 +121,17 @@ function deletePiece(id) {
                             <InputLabel for="theoretical_weight" value="Peso Teórico" />
                             <TextInput v-model="form.theoretical_weight" id="theoretical_weight" type="number"
                                 class="mt-1 block w-full" step="0.01" autocomplete="off" />
-                            <p v-if="form.errors.theoretical_weight" class="text-red-600 text-sm mt-1">{{
-                                form.errors.theoretical_weight }}</p>
+                            <p v-if="form.errors.theoretical_weight" class="text-red-600 text-sm mt-1">
+                                {{ form.errors.theoretical_weight }}
+                            </p>
                         </div>
 
                         <div class="mb-4">
                             <InputLabel for="real_weight" value="Peso Real" />
                             <TextInput v-model="form.real_weight" id="real_weight" type="number" step="0.01"
                                 class="mt-1 block w-full" autocomplete="off" />
-                            <p v-if="form.errors.real_weight" class="text-red-600 text-sm mt-1">{{
-                                form.errors.real_weight }}
+                            <p v-if="form.errors.real_weight" class="text-red-600 text-sm mt-1">
+                                {{ form.errors.real_weight }}
                             </p>
                         </div>
 
@@ -174,15 +188,23 @@ function deletePiece(id) {
                             <tr v-for="piece in props.pieces" :key="piece.id" class="bg-white border-b border-gray-200">
                                 <td class="px-6 py-4 font-medium text-gray-900">{{ piece.code }}</td>
                                 <td class="px-6 py-4">{{ Number(piece.theoretical_weight).toFixed(2) }}</td>
-                                <td class="px-6 py-4">{{ Number(piece.real_weight) !== null ?
-                                    Number(piece.real_weight).toFixed(2) : '-'
-                                }}</td>
+                                <td class="px-6 py-4">
+                                    {{
+                                        piece.real_weight !== null && piece.real_weight !== undefined
+                                            ? Number(piece.real_weight).toFixed(2)
+                                            : '-'
+                                    }}
+                                </td>
                                 <td class="px-6 py-4">{{ piece.status }}</td>
                                 <td class="px-6 py-4">{{ piece.block?.name || 'N/A' }}</td>
-                                <td class="px-6 py-4">{{ piece.registration_date ? new
-                                    Date(piece.registration_date).toLocaleString() : 'Sin tiempo' }}</td>
+                                <td class="px-6 py-4">
+                                    {{
+                                        piece.registration_date
+                                            ? new Date(piece.registration_date).toLocaleString()
+                                            : 'Sin tiempo'
+                                    }}
+                                </td>
                                 <td class="px-6 py-4">{{ piece.registered_by?.name || 'Sin asignación' }}</td>
-                                <td class="px-6 py-4 flex gap-2">
                                 <td class="px-6 py-4 flex gap-2">
                                     <button v-if="piece.registered_by && piece.registered_by.id === props.authUser.id"
                                         @click="startEdit(piece)"
@@ -196,7 +218,6 @@ function deletePiece(id) {
                                         Eliminar
                                     </button>
                                 </td>
-                                </td>
                             </tr>
 
                             <tr v-if="props.pieces.length === 0">
@@ -205,7 +226,6 @@ function deletePiece(id) {
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </div>
     </AppLayout>

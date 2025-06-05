@@ -13,14 +13,13 @@ return new class extends Migration
     {
         Schema::create('pieces', function (Blueprint $table) {
             $table->id();
-
-            $table->string('code');
-            $table->decimal('theoretical_weight', 4, 2);
-            $table->decimal('real_weight', 4, 2)->nullable();
+            $table->string('code')->unique();
+            $table->decimal('theoretical_weight', 8, 2);
+            $table->decimal('real_weight', 8, 2)->nullable();
             $table->enum('status', ['Pendiente', 'Fabricado'])->default('Pendiente');
-            $table->boolean('deleted')->default(false);
+            $table->softDeletes();
 
-            $table->string('block_id');
+            $table->unsignedBigInteger('block_id');
             $table->timestamp('registration_date')->nullable();
             $table->unsignedBigInteger('registered_by')->nullable();
 

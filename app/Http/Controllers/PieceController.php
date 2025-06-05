@@ -7,6 +7,7 @@ use App\Models\Piece;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Database\QueryException;
 
 class PieceController extends Controller
 {
@@ -15,11 +16,10 @@ class PieceController extends Controller
      */
     public function index()
     {
-        $pieces = Piece::where('deleted', false)
-            ->with(['block.project', 'registeredBy'])
-            ->get();
+        $pieces = Piece::with(['block.project', 'registeredBy'])->get();
 
-        $blocks = Block::where('deleted', false)->with('project')->get();
+        // Quitar filtro deleted para testear
+        $blocks = Block::with('project')->get();
 
         $authUser = Auth::user();
 
@@ -35,20 +35,27 @@ class PieceController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|unique:pieces,code',
-            'theoretical_weight' => 'required|numeric|min:0',
-            'real_weight' => 'nullable|numeric|min:0',
-            'status' => 'required|in:Pendiente,Fabricado',
-            'block_id' => 'required|string|exists:blocks,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'code' => 'required|string|unique:pieces,code',
+                'theoretical_weight' => 'required|numeric|min:0',
+                'real_weight' => 'nullable|numeric|min:0',
+                'status' => 'required|in:Pendiente,Fabricado',
+                'block_id' => 'required|integer|exists:blocks,id',
+            ]);
 
-        $validated['registration_date'] = now();
-        $validated['registered_by'] = Auth::id();
+            $validated['registration_date'] = now();
+            $validated['registered_by'] = Auth::id();
 
-        Piece::create($validated);
+            Piece::create($validated);
 
-        return redirect()->route('pieces.index');
+            return redirect()->route('pieces.index')->with('success', 'Pieza creada correctamente.');
+        } catch (\Throwable $e) {
+            // Aquí puedes loggear el error con Log::error($e) si quieres
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Error al crear la pieza: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -56,25 +63,29 @@ class PieceController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $piece = Piece::findOrFail($id);
+        try {
+            $piece = Piece::findOrFail($id);
 
-        $validated = $request->validate([
-            // 'code' => [
-            //     'required',
-            //     'string',
-            //     Rule::unique('pieces', 'code')->ignore($piece->id, 'id'),
-            // ],
-            'theoretical_weight' => 'required|numeric|min:0',
-            'real_weight' => 'nullable|numeric|min:0',
-            'status' => 'required|in:Pendiente,Fabricado',
-            'block_id' => 'required|string|exists:blocks,id',
-        ]);
+            $validated = $request->validate([
+                'code' => [
+                    'required',
+                    'string',
+                    Rule::unique('pieces', 'code')->ignore($piece->id),
+                ],
+                'theoretical_weight' => 'required|numeric|min:0',
+                'real_weight' => 'nullable|numeric|min:0',
+                'status' => 'required|in:Pendiente,Fabricado',
+                'block_id' => 'required|integer|exists:blocks,id',
+            ]);
 
-        $validated['registration_date'] = now();
+            $piece->update($validated);
 
-        $piece->update($validated);
-
-        return redirect()->route('pieces.index');
+            return redirect()->route('pieces.index')->with('success', 'Pieza actualizada correctamente.');
+        } catch (\Throwable $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Error al actualizar la pieza: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -82,10 +93,14 @@ class PieceController extends Controller
      */
     public function destroy(string $id)
     {
-        $piece = Piece::findOrFail($id);
-        $piece->deleted = true;
-        $piece->save();
+        try {
+            $piece = Piece::findOrFail($id);
+            $piece->delete();
 
-        return redirect()->route('pieces.index');
+            return redirect()->route('pieces.index')->with('success', 'Pieza eliminada correctamente.');
+        } catch (\Throwable $e) {
+            return redirect()->back()
+                ->withErrors(['error' => 'Error al eliminar la pieza: ' . $e->getMessage()]);
+        }
     }
 }

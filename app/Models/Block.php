@@ -3,23 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Block extends Model
 {
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    use SoftDeletes;
 
-    protected $fillable = ['id', 'name', 'project_id'];
+    protected $fillable = ['block_id', 'name', 'project_id'];
 
     public function project()
     {
-        return $this->belongsTo(Project::class, 'project_id', 'id');
+        return $this->belongsTo(Project::class);
     }
 
-    // Relación con piezas (pieces)
     public function pieces()
     {
-        return $this->hasMany(Piece::class, 'block_id', 'id');
+        return $this->hasMany(Piece::class);
+    }
+
+    public function getBlockIdAttribute()
+    {
+        return $this->attributes['block_id'];
     }
 }

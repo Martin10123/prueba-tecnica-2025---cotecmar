@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
 {
@@ -12,11 +14,18 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        $projects = Project::where('deleted', false)->get();
+        try {
+            $projects = Project::all();
 
-        return inertia('Projects/Projects', [
-            'projects' => $projects,
-        ]);
+            return inertia('Projects/Projects', [
+                'projects' => $projects,
+            ]);
+        } catch (\Throwable $th) {
+            // Manejo de errores, podrías registrar el error o mostrar un mensaje
+            return inertia('Error', [
+                'message' => 'Error al cargar los proyectos: ' . $th->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -24,33 +33,59 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'id' => 'required|string|unique:projects,id',
-            'name' => 'required|string|max:255',
-        ]);
+        try {
+            $request->validate([
+                'project_id' => 'required|string',
+                'name' => 'required|string|max:255',
+            ]);
 
-        Project::create($validated);
+            $existingProject = Project::withTrashed()
+                ->where('project_id', $request->project_id)
+                ->first();
 
-        return redirect()->route('projects.index');
+            if ($existingProject) {
+                if ($existingProject->trashed()) {
+                    $existingProject->restore();
+                    $existingProject->update(['name' => $request->name]);
+                } else {
+                    throw ValidationException::withMessages([
+                        'project_id' => 'El ID del proyecto ya está en uso.',
+                    ]);
+                }
+            } else {
+                Project::create($request->only('project_id', 'name'));
+            }
+
+            return redirect()->route('projects.index');
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Throwable $th) {
+            return inertia('Projects/Projects', [
+                'error' => 'Error al guardar el proyecto: ' . $th->getMessage(),
+                'projects' => Project::all(),
+            ]);
+        }
     }
-
-
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
     {
-        $project = Project::findOrFail($id);
 
-        $validated = $request->validate([
-            // El id no se cambia, por eso solo validamos el name
-            'name' => 'required|string|max:255',
-        ]);
+        try {
+            $project = Project::findOrFail($id);
 
-        $project->update($validated);
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+            ]);
 
-        return redirect()->route('projects.index');
+            $project->update($validated);
+
+            return redirect()->route('projects.index');
+        } catch (\Throwable $th) {
+            return back()->withErrors(['error' => 'Error al actualizar el proyecto: ' . $th->getMessage()]);
+        }
     }
 
     /**
@@ -58,11 +93,13 @@ class ProjectController extends Controller
      */
     public function destroy(string $id)
     {
-        $project = Project::findOrFail($id);
-        // Cambiar deleted a true en vez de eliminar físicamente
-        $project->deleted = true;
-        $project->save();
+        try {
+            $project = Project::findOrFail($id);
+            $project->delete();
 
-        return redirect()->route('projects.index');
+            return redirect()->route('projects.index');
+        } catch (\Throwable $th) {
+            return back()->withErrors(['error' => 'Error al eliminar el proyecto: ' . $th->getMessage()]);
+        }
     }
 }

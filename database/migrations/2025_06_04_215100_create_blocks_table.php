@@ -12,10 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('blocks', function (Blueprint $table) {
-            $table->string('id')->primary();      // id tipo string, ej: 130-1110
+            $table->id();
+            $table->string('block_id')->unique();
             $table->string('name');
-            $table->string('project_id');
-            $table->boolean('deleted')->default(false);
+            $table->unsignedBigInteger('project_id');
+            $table->softDeletes();
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
             $table->timestamps();
         });

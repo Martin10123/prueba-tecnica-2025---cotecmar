@@ -3,10 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Piece extends Model
 {
-    protected $primaryKey = 'id';
+    use SoftDeletes;
 
     protected $fillable = [
         'code',
@@ -26,11 +27,18 @@ class Piece extends Model
 
     public function block()
     {
-        return $this->belongsTo(Block::class, 'block_id', 'id');
+        return $this->belongsTo(Block::class);
     }
 
+    // Relación con el usuario que registró la pieza
     public function registeredBy()
     {
-        return $this->belongsTo(User::class, 'registered_by', 'id');
+        return $this->belongsTo(User::class, 'registered_by');
+    }
+
+    // Para acceder al ID específico de la pieza
+    public function getPieceIdAttribute()
+    {
+        return $this->attributes['piece_id'];
     }
 }
