@@ -43,6 +43,7 @@ function cancelEdit() {
 
 function submit() {
     if (editMode.value) {
+
         form.put(route('pieces.update', editingPieceId.value), {
             onSuccess: () => {
                 cancelEdit();

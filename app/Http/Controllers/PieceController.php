@@ -6,6 +6,7 @@ use App\Models\Block;
 use App\Models\Piece;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class PieceController extends Controller
 {
@@ -58,7 +59,11 @@ class PieceController extends Controller
         $piece = Piece::findOrFail($id);
 
         $validated = $request->validate([
-            'code' => 'required|string|unique:pieces,code,' . $piece->id . ',id',
+            'code' => [
+                'required',
+                'string',
+                Rule::unique('pieces', 'code')->ignore($piece->id),
+            ],
             'theoretical_weight' => 'required|numeric|min:0',
             'real_weight' => 'nullable|numeric|min:0',
             'status' => 'required|in:Pendiente,Fabricado',
