@@ -99,14 +99,8 @@ function deletePiece(id) {
                     <form @submit.prevent="submit">
                         <div class="mb-4">
                             <InputLabel for="code" value="Código" />
-                            <TextInput
-  v-model="form.code"
-  id="code"
-  type="text"
-  :readonly="editMode"
-  class="mt-1 block w-full bg-gray-100"
-  autocomplete="off"
-/>
+                            <TextInput v-model="form.code" id="code" type="text" :readonly="editMode"
+                                class="mt-1 block w-full bg-gray-100" autocomplete="off" />
                             <p v-if="form.errors.code" class="text-red-600 text-sm mt-1">{{ form.errors.code }}</p>
                         </div>
 
@@ -182,7 +176,7 @@ function deletePiece(id) {
                                 <td class="px-6 py-4">{{ Number(piece.theoretical_weight).toFixed(2) }}</td>
                                 <td class="px-6 py-4">{{ Number(piece.real_weight) !== null ?
                                     Number(piece.real_weight).toFixed(2) : '-'
-                                    }}</td>
+                                }}</td>
                                 <td class="px-6 py-4">{{ piece.status }}</td>
                                 <td class="px-6 py-4">{{ piece.block?.name || 'N/A' }}</td>
                                 <td class="px-6 py-4">{{ piece.registration_date ? new
