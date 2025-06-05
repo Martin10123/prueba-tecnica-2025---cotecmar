@@ -58,7 +58,7 @@ class PieceController extends Controller
         $piece = Piece::findOrFail($id);
 
         $validated = $request->validate([
-            'code' => 'required|string|unique:pieces,code,' . $id,
+            'code' => 'required|string|unique:pieces,code,' . $piece->id . ',id',
             'theoretical_weight' => 'required|numeric|min:0',
             'real_weight' => 'nullable|numeric|min:0',
             'status' => 'required|in:Pendiente,Fabricado',
